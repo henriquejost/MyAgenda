@@ -1,91 +1,67 @@
-import android.content.Intent;
-import android.os.Bundle;
-import android.util.Log;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
-import android.widget.ListView;
-import android.widget.TextView;
+package com.example.myagenda.model;
 
+import android.content.Context;
 
-import androidx.activity.EdgeToEdge;
-import androidx.annotation.NonNull;
+import android.database.sqlite.SQLiteDatabase;
+
+import android.database.sqlite.SQLiteOpenHelper;
+
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 
-import com.example.myagenda.controller.ContatoController;
-import com.example.myagenda.model.Contato;
-import com.example.myagenda.model.ContatoDAO;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
+//estende a classe auxiliar de SQLite
 
-import java.util.List;
+public class DatabaseHelper extends SQLiteOpenHelper {
 
-public class MainActivity extends AppCompatActivity {
-    //propriedades referentes aos componentes View no layout
-    private Toolbar toolbar;
-    private ListView listView;
-    private FloatingActionButton fabAdicionar;
-    private List<Contato> contatos;
-    private ArrayAdapter<Contato> adapter;
+    //propriedades como constantes - nome e versao do database
+
+    private static final String DB_NAME = "contatos.db";
+
+    private static final int DB_VERSION = 2;
+
+    //construtor -
+
+    public DatabaseHelper(@Nullable Context context) {
+
+        super(context, DB_NAME, null, DB_VERSION);
+
+    }
+
+    //sobrepoe o metodo onCreate - faz a criacao do database
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
-        setContentView(R.layout.activity_main);
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
-        inicializarViews();
-        carregarContatos();
+
+    public void onCreate(SQLiteDatabase db) {
+
+        db.execSQL("CREATE TABLE contato (" +
+
+                "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+
+                "nome TEXT NOT NULL, " +
+
+                "email TEXT, " +
+
+                "telefone TEXT NOT NULL," +
+
+                "foto TEXT);");
+
     }
 
-    private void inicializarViews(){
-        //inicalizar os componentes
-        toolbar = findViewById(R.id.toolbar);
-        listView = findViewById(R.id.listView);
-        fabAdicionar = findViewById(R.id.fabAdicionar);
-
-        fabAdicionar.setOnClickListener(v -> {
-            Intent intent = new Intent(MainActivity.this, AdicionarContatoActivity.class);
-            startActivity(intent);
-        });
-    }
-
-    private void carregarContatos(){
-        ContatoController controller = new ContatoController(this);
-        contatos = controller.listarContatos();
-        //precisamos levar os dados para a Activity - Adapter
-        adapter = new ArrayAdapter<>(this, R.layout.list_item, contatos){
-            @NonNull
-            @Override
-            public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
-                if (convertView == null){
-                    convertView = getLayoutInflater().inflate(R.layout.list_item, parent, false);
-                }
-                Contato contato = getItem(position);
-                //escrever nos TextViews do layout
-                TextView textNome = convertView.findViewById(R.id.textNomeLista);
-                TextView textTelefone = convertView.findViewById(R.id.textTelLista);
-
-                textNome.setText(contato.getNome());
-                textTelefone.setText(contato.getTelefone());
-                return convertView;
-
-            }
-        };
-        listView.setAdapter(adapter);
-    }
+    //sobrepoe o metodo onUpgrade - quando a base ja existe, e muda a versao, por exemplo
 
     @Override
-    protected void onResume() {
-        super.onResume();
-        carregarContatos(); //ao voltar para esta activity, recarrega
+
+    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+
+        if (oldVersion<2){
+
+            db.execSQL("ALTER TABLE contato ADD COLUMN foto TEXT");
+
+        }
+
+        db.execSQL("DROP TABLE IF EXISTS contato");
+
+        onCreate(db);
+
     }
+
 }

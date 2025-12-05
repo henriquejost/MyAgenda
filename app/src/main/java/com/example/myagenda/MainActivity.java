@@ -2,6 +2,7 @@ package com.example.myagenda;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
@@ -59,4 +60,34 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private void carregarContatos(){
+        ContatoController controller = new ContatoController(this);
+        contatos = controller.listarContatos();
+        //precisamos levar os dados para a Activity - Adapter
+        adapter = new ArrayAdapter<>(this, R.layout.list_item, contatos){
+            @NonNull
+            @Override
+            public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
+                if (convertView == null){
+                    convertView = getLayoutInflater().inflate(R.layout.list_item, parent, false);
+                }
+                Contato contato = getItem(position);
+                //escrever nos TextViews do layout
+                TextView textNome = convertView.findViewById(R.id.textNomeLista);
+                TextView textTelefone = convertView.findViewById(R.id.textTelLista);
+
+                textNome.setText(contato.getNome());
+                textTelefone.setText(contato.getTelefone());
+                return convertView;
+
+            }
+        };
+        listView.setAdapter(adapter);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        carregarContatos(); //ao voltar para esta activity, recarrega
+    }
 }

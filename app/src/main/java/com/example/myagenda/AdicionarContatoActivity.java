@@ -1,126 +1,71 @@
 package com.example.myagenda;
 
-import android.app.AlertDialog;
-import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
-import android.widget.ListView;
-import android.widget.TextView;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.Toast;
 
-
 import androidx.activity.EdgeToEdge;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.example.myagenda.controller.ContatoController;
-import com.example.myagenda.model.Contato;
-import com.example.myagenda.model.ContatoDAO;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
-import java.util.List;
+public class AdicionarContatoActivity extends AppCompatActivity {
+    private EditText editNome, editEmail, editTelefone;
+    private Button btnSalvar;
+    private ImageView imageViewFoto;
 
-public class MainActivity extends AppCompatActivity {
-    //propriedades referentes aos componentes View no layout
-    private Toolbar toolbar;
-    private ListView listView;
-    private FloatingActionButton fabAdicionar;
-    private List<Contato> contatos;
-    private ArrayAdapter<Contato> adapter;
-    private ContatoController controller;
-
+    ContatoController contatoController;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_adicionar_contato);
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+
+        contatoController = new ContatoController(this);
         inicializarViews();
-        carregarContatos();
-        configurarListeners();
     }
 
-    private void inicializarViews(){
-        //inicalizar os componentes
-        toolbar = findViewById(R.id.toolbar);
-        listView = findViewById(R.id.listView);
-        fabAdicionar = findViewById(R.id.fabAdicionar);
+    public void inicializarViews(){
+        editNome = findViewById(R.id.editTextNome);
+        editEmail = findViewById(R.id.editTextEmail);
+        editTelefone = findViewById(R.id.editTextTelefone);
+        btnSalvar = findViewById(R.id.btnSalvar);
+        imageViewFoto = findViewById(R.id.imageView2);
 
-        fabAdicionar.setOnClickListener(v -> {
-            Intent intent = new Intent(MainActivity.this, AdicionarContatoActivity.class);
-            startActivity(intent);
-        });
+        btnSalvar.setOnClickListener(v -> salvarContato());
     }
 
-    private void carregarContatos(){
-        controller = new ContatoController(this);
-        contatos = controller.listarContatos();
-        //precisamos levar os dados para a Activity - Adapter
-        adapter = new ArrayAdapter<>(this, R.layout.list_item, contatos){
-            @NonNull
-            @Override
-            public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
-                if (convertView == null){
-                    convertView = getLayoutInflater().inflate(R.layout.list_item, parent, false);
-                }
-                Contato contato = getItem(position);
-                //escrever nos TextViews do layout
-                TextView textNome = convertView.findViewById(R.id.textNomeLista);
-                TextView textTelefone = convertView.findViewById(R.id.textTelLista);
+    public void salvarContato(){
+        //recuperar os valores dos edits
+        String nome = editNome.getText().toString().trim();
+        String email = editEmail.getText().toString().trim();
+        String telefone = editTelefone.getText().toString().trim();
 
-                textNome.setText(contato.getNome());
-                textTelefone.setText(contato.getTelefone());
-                return convertView;
+        //validacao
+        if (nome.isEmpty() || telefone.isEmpty()){
+            Toast.makeText(this, "Nome e telefone são obrigatórios", Toast.LENGTH_SHORT).show();
+        }
+        //inserir contato - precisa acionar o Controller
+        contatoController.adicionarContato(nome, email, telefone, ""); //foto em branco
+        Toast.makeText(this, "Contato adicionado com sucesso", Toast.LENGTH_SHORT).show();
 
-            }
-        };
-        listView.setAdapter(adapter);
-    }
-
-    private void configurarListeners(){
-        //clique curto em item do listView - alterar contato
-        listView.setOnItemClickListener((parent, view, position, id) -> {
-            //position dá a posição do item selecionado
-            Contato contato = contatos.get(position);
-            //abrir a activity
-            Intent intent = new Intent(MainActivity.this, AdicionarContatoActivity.class);
-            intent.putExtra("contato", contato);
-            startActivity(intent);
-        });
-
-        //clique longo em item do liostView - Excluir contato
-        listView.setOnItemLongClickListener((parent, view, position, id) -> {
-            Contato contato = contatos.get(position);
-            //alerta de confirmação de exclusão
-            new AlertDialog.Builder(this).
-                    setTitle("Confirmação de Exclusão").
-                    setMessage("Deseja realmente excluir o contato " + contato.getNome() + "?").
-                    setPositiveButton("Sim", (dialog, wich) -> {
-                        controller.apagarContato(contato.getId());
-                        carregarContatos(); //atualizar a listView
-                        Toast.makeText(this, "Contato excluído", Toast.LENGTH_SHORT).show();
-                    }).
-                    setNegativeButton("Não", null).
-                    show();
-            return true;
-        });
+        finish();
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
-        carregarContatos(); //ao voltar para esta activity, recarrega
+    protected void onDestroy() {
+        super.onDestroy();
+        contatoController.close();
     }
 }
